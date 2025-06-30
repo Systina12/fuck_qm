@@ -14,7 +14,7 @@ fn main() -> Result<()> {
     let qq_music_process = device
         .enumerate_processes()
         .into_iter()
-        .find(|x| x.get_name() == "QQMusic.exe")
+        .find(|x| x.get_name().to_ascii_lowercase().contains("qqmusic"))
         .context("请先启动QQ音乐")?;
 
     let session = device.attach(qq_music_process.get_pid())?;
