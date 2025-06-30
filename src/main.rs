@@ -48,9 +48,17 @@ fn main() -> Result<()> {
                 let mut new_file_name = path.clone();
                 new_file_name.set_extension(new_ext);
                 let new_file_name = new_file_name.file_name().unwrap().to_str().unwrap();
-                let md5_file_name = format!("{:x}", md5::compute(new_file_name));
-                let new_md5_path = output.join(md5_file_name);
                 let new_file_path = output.join(new_file_name);
+                if new_file_path.exists() {
+                    println!(
+                        "[*] 文件已存在: {} 跳过处理",
+                        new_file_path.display()
+                    );
+                    continue;
+                }
+                let md5_file_name = format!("{:x}", md5::compute(new_file_name));
+                let new_md5_path = output.join(md5_file_name);               
+                
                 script.exports.call(
                     "decrypt",
                     Some(json!([
