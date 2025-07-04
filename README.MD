@@ -6,4 +6,5 @@
 ## 使用方法:
 * 1 打开qq音乐
 * 2 下载想要的音乐
-* 3 windows x64 版本 下载 qqmusic_des-x86_64-pc-windows-msvc-windows-latest.zip  x86版本 下载 qqmusic_des-i686-pc-windows-msvc-windows-latest.zip 下载完成后直接运行此程序
+* 3 到[release](https://github.com/luyikk/qqmusic_decrypt/releases) 下载指定系统的程序
+* 4 windows x64版本 下载 qqmusic_des-x86_64-pc-windows-msvc-windows-latest.zip x86版本 下载 qqmusic_des-i686-pc-windows-msvc-windows-latest.zip 下载完成后直接运行此程序
