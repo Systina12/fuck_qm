@@ -9,4 +9,4 @@
 * 3 到[release](https://github.com/luyikk/qqmusic_decrypt/releases) 下载指定系统的程序
 * 4 windows x64版本 下载 qqmusic_des-x86_64-pc-windows-msvc-windows-latest.zip   
     windows x86版本 下载 qqmusic_des-i686-pc-windows-msvc-windows-latest.zip  
-   下载完成后解压到桌面直接运行此程序
+   下载完成后解压到桌面 直接运行此程序,注意:运行期间不要关闭qq音乐
