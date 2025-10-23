@@ -22,9 +22,10 @@ fn run() -> Result<()> {
     let mut args = args_os().skip(1);
     let maybe_dropped: Option<OsString> = args.next();
 
-    // 如果没有传入参数，按用户要求直接输出提示并退出（非错误）
+    // 如果没有传入参数，打印并等待（按你的新要求）
     if maybe_dropped.is_none() {
         println!("没有传入");
+        wait_for_enter("按回车键退出...");
         return Ok(());
     }
 
@@ -53,6 +54,7 @@ fn run() -> Result<()> {
     let session = device.attach(qq_music_process.get_pid())?;
     let mut script_option = frida::ScriptOption::default();
     let js = include_str!(".././hook_qq_music.js");
+    // 注意这里 script 是可变的
     let mut script = session.create_script(js, &mut script_option)?;
     script.handle_message(Handler)?;
     script.load()?;
@@ -63,13 +65,15 @@ fn run() -> Result<()> {
         .map(PathBuf::from)
         .context("无法确定文件所在目录")?;
 
-    process_single_file(&script, &dropped_path, &parent_dir)?;
+    // 传入可变引用
+    process_single_file(&mut script, &dropped_path, &parent_dir)?;
 
     Ok(())
 }
 
 /// 处理单个文件：根据扩展名决定是否处理、调用 JS decrypt，输出到 same_dir
-fn process_single_file(script: &frida::Script, path: &PathBuf, same_dir: &PathBuf) -> Result<()> {
+/// 注意：script 现在是 &mut frida::Script
+fn process_single_file(script: &mut frida::Script, path: &PathBuf, same_dir: &PathBuf) -> Result<()> {
     // 检查扩展名并映射
     let extension_opt = path
         .extension()
@@ -108,6 +112,7 @@ fn process_single_file(script: &frida::Script, path: &PathBuf, same_dir: &PathBu
     );
 
     // 调用 JS 导出的 decrypt(path, out_path)
+    // 现在 script 是 &mut，可以调用需要可变借用的方法
     script.exports.call(
         "decrypt",
         Some(json!([path.display().to_string(), new_md5_path.display().to_string()])),
@@ -132,7 +137,7 @@ impl frida::ScriptHandler for Handler {
     }
 }
 
-/// 等待用户按回车并显示提示（仅在错误时使用）
+/// 等待用户按回车并显示提示（仅在错误或无参数时使用）
 fn wait_for_enter(prompt: &str) {
     let _ = io::stdout().flush();
     println!("{}", prompt);
