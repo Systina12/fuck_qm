@@ -18,26 +18,15 @@ fn main() {
 }
 
 fn run() -> Result<()> {
-    // 只接受第一个命令行参数（Windows 拖放到 exe 时会把文件路径当作参数）
+    // 接受所有传入的命令行参数（Windows 拖放到 exe 时会把文件路径当作参数）
     let mut args = args_os().skip(1);
-    let maybe_dropped: Option<OsString> = args.next();
+    let inputs: Vec<OsString> = args.collect();
 
-    // 如果没有传入参数，打印并等待（按你的新要求）
-    if maybe_dropped.is_none() {
+    // 如果没有传入参数，打印并等待
+    if inputs.is_empty() {
         println!("没有传入");
         wait_for_enter("按回车键退出...");
         return Ok(());
-    }
-
-    // 以下为处理传入单个文件的逻辑
-    let dropped_path: PathBuf = PathBuf::from(maybe_dropped.unwrap());
-    println!("[*] 收到拖放文件: {}", dropped_path.display());
-
-    if !dropped_path.exists() {
-        anyhow::bail!("文件不存在: {}", dropped_path.display());
-    }
-    if !dropped_path.is_file() {
-        anyhow::bail!("不是文件: {}", dropped_path.display());
     }
 
     // 初始化 Frida、设备、并附加 QQMusic（保持原逻辑）
@@ -59,15 +48,48 @@ fn run() -> Result<()> {
     script.handle_message(Handler)?;
     script.load()?;
 
-    // 目标目录就是该文件所在目录
-    let parent_dir = dropped_path
-        .parent()
-        .map(PathBuf::from)
-        .context("无法确定文件所在目录")?;
+    // 跟踪是否有错误发生：如果有错误，最终返回 Err，让 main 等待用户按回车
+    let mut had_error = false;
 
-    // 传入可变引用
-    process_single_file(&mut script, &dropped_path, &parent_dir)?;
+    // 依次处理每个传入的文件
+    for os_path in inputs {
+        let dropped_path: PathBuf = PathBuf::from(os_path);
+        println!("[*] 收到拖放文件: {}", dropped_path.display());
 
+        if !dropped_path.exists() {
+            eprintln!("错误: 文件不存在: {}", dropped_path.display());
+            had_error = true;
+            continue;
+        }
+        if !dropped_path.is_file() {
+            eprintln!("错误: 不是文件: {}", dropped_path.display());
+            had_error = true;
+            continue;
+        }
+
+        // 目标目录就是该文件所在目录
+        let parent_dir = match dropped_path.parent().map(PathBuf::from) {
+            Some(p) => p,
+            None => {
+                eprintln!("错误: 无法确定文件所在目录: {}", dropped_path.display());
+                had_error = true;
+                continue;
+            }
+        };
+
+        // 调用处理单个文件的函数；若失败则记录并继续下一个文件
+        if let Err(e) = process_single_file(&mut script, &dropped_path, &parent_dir) {
+            eprintln!("处理文件失败: {}: {:#}", dropped_path.display(), e);
+            had_error = true;
+            continue;
+        }
+    }
+
+    if had_error {
+        anyhow::bail!("至少有一个文件处理失败");
+    }
+
+    // 全部处理成功，直接退出（不等待回车）
     Ok(())
 }
 
